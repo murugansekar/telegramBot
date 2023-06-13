@@ -12,7 +12,7 @@ let Bot = new telegramBot(token, { polling: true });
 Bot.on("message", async (message) => {
   const chatId = message.from.id;
   const textInput = message.text;
-  const textOutput = await getAIResponse(textInput);
+  const textOutput = await getAIResponse(textInput, chatId);
   console.log(textOutput);
   const arrayBuffer = await getAudioResponse(textOutput);
   let audioBuffer = Buffer.from(arrayBuffer);
@@ -23,7 +23,7 @@ Bot.on("message", async (message) => {
   });
 });
 
-async function getAIResponse(textInput) {
+async function getAIResponse(textInput, chatId) {
   try {
     const configuration = new Configuration({
       apiKey: process.env.AiKey,
@@ -43,6 +43,7 @@ async function getAIResponse(textInput) {
       temperature: 0.5,
       max_tokens: 2000,
       top_p: 1,
+      user: chatId + ''
     });
     const textOutput = openaiResponses.data.choices[0].message.content;
     // const openaiResponses = await openai.createCompletion({
