@@ -68,7 +68,7 @@ async function getAIResponse(textInput, chatId) {
     // const textOutput = openaiResponses.data.choices[0].text;
     return textOutput;
   } catch (error) {
-    console.log(error);
+    console.log('Error in Ai', error);
   }
 };
 
@@ -95,7 +95,7 @@ async function getAudioResponse(textInput) {
     const data = speechDetails.data;
     return data;
   } catch (error) {
-    console.log(error);
+    console.log('Error in Eleven', error);
   }
 }
 
