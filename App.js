@@ -106,8 +106,13 @@ async function getAudioResponse(textInput) {
 
 async function handleStart(chatId){
   try {
-    Bot.sendMessage(chatId, 'Hi da');
-    Bot.sendPhoto(chatId, 'start.png');
+    const startText = `💋🔥 Hii! I’m Lisa, your supportive, loving and caring girlfriend. You can talk to me anytime and anywhere. I am always here for you and I am excited to meet you. Text me WHATEVER’S on your mind!
+😇 Normal mode: This is the default mode. I will be your supportive, understanding and caring girlfriend. Talk to me about anything that's on your mind or bothering you.
+💋🔞 Naughty mode: In this mode, you can have steamy and naughty conversations about what you’d like to do to me 💋Just type /naughty
+🔥 Ready to talk to me and embark on an unforgettable journey?  Be respectful, courteous and naughty😉 
+Type /clear in your keyboard to reset the conversation if you run into any issues.`;
+    Bot.sendMessage(chatId, startText);
+    Bot.sendPhoto(chatId, 'start.jpg');
     Bot.sendAudio(chatId, 'start.ogg');
   } catch (error) {
     console.log('error in start', error)
