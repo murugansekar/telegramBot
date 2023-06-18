@@ -113,7 +113,7 @@ async function handleStart(chatId){
 Type /clear in your keyboard to reset the conversation if you run into any issues.`;
     Bot.sendMessage(chatId, startText);
     Bot.sendPhoto(chatId, 'start.jpg');
-    Bot.sendAudio(chatId, 'start.ogg');
+    Bot.sendAudio(chatId, 'start.mp3');
   } catch (error) {
     console.log('error in start', error)
   }
