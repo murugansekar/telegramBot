@@ -24,15 +24,20 @@ let Bot = new telegramBot(token, { polling: true });
 Bot.on("message", async (message) => {
   const chatId = message.from.id;
   const textInput = message.text;
-  const textOutput = await getAIResponse(textInput, chatId);
-  console.log(textOutput);
-  const arrayBuffer = await getAudioResponse(textOutput);
-  let audioBuffer = Buffer.from(arrayBuffer);
-  fs.writeFile('audioOutput.ogg', audioBuffer, function(err) {
-    if (err) throw err;
-    console.log('File saved succesfully')
-    Bot.sendAudio(chatId, 'audioOutput.ogg');
-  });
+  if(textInput === '/start')
+  {
+    await handleStart(chatId);
+  } else {
+    const textOutput = await getAIResponse(textInput, chatId);
+    console.log(textOutput);
+    const arrayBuffer = await getAudioResponse(textOutput);
+    let audioBuffer = Buffer.from(arrayBuffer);
+    fs.writeFile('audioOutput.ogg', audioBuffer, function(err) {
+      if (err) throw err;
+      console.log('File saved succesfully')
+      Bot.sendAudio(chatId, 'audioOutput.ogg');
+    });
+  }
 });
 
 async function getAIResponse(textInput, chatId) {
@@ -96,6 +101,16 @@ async function getAudioResponse(textInput) {
     return data;
   } catch (error) {
     console.log('Error in Eleven', error);
+  }
+}
+
+async function handleStart(chatId){
+  try {
+    Bot.sendMessage(chatId, 'Hi da');
+    Bot.sendPhoto(chatId, 'start.png');
+    Bot.sendAudio(chatId, 'start.ogg');
+  } catch (error) {
+    console.log('error in start', error)
   }
 }
 
