@@ -6,7 +6,8 @@ const db = new Sequelize(process.env.DB_LINK, {
     protocol: 'postgres',
     dialectOptions: {
         ssl: {
-            require: 'true'
+            require: 'true',
+            rejectUnauthorized: false
           }
     }
   });
