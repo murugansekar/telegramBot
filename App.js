@@ -1,4 +1,3 @@
-
 const { Configuration, OpenAIApi } = require("openai");
 const telegramBot = require("node-telegram-bot-api");
 const dotenv = require("dotenv");
@@ -7,19 +6,25 @@ const axios = require('axios');
 const fs = require('fs');
 let token = process.env.TelegramKey;
 token = token.toString();
-
+let Bot = new telegramBot(token, { polling: true });
 const express = require('express');
 const app = express();
+const db = require('./database')
+const Ttl = require('./ttl');
+
 app.get('/', (req, res) => {
   res.send('Hello World  dummy ');
 });
-app.listen(3000, () => {
-  console.log("Server running");
+
+db.sync({ force: false })
+.then(result => {
+  console.log('DB sync up done');
+  app.listen(3000, () => {
+    console.log("Server running");
+  });
 });
 
 
-
-let Bot = new telegramBot(token, { polling: true });
 
 Bot.on("message", async (message) => {
   const chatId = message.from.id;
@@ -28,7 +33,35 @@ Bot.on("message", async (message) => {
   {
     await handleStart(chatId);
   } else {
-    const textOutput = await getAIResponse(textInput, chatId);
+    const data = {
+      uniqueId: chatId,
+      message: ['hello'],
+      mode: 'normal',
+      balance: 10 //minutes
+    };
+    
+    const rawDbData = await Ttl.findOrCreate({
+      where: { uniqueId: chatId },
+      defaults: data,
+      raw:true
+    });
+    let dbData; 
+    dbData = rawDbData[0];
+
+    if(textInput === '/naughty') {
+      dbData = await Ttl.findOne({where: { uniqueId: chatId }})
+      dbData.mode = 'naughty';
+      await dbData.save();
+      Bot.sendMessage(chatId, 'Naughty mode Activated');
+    } else if(textInput === '/normal') {
+      dbData = await Ttl.findOne({where: { uniqueId: chatId }})
+      dbData.mode = 'normal';
+      await dbData.save();
+      Bot.sendMessage(chatId, 'Normal mode Activated');
+    } else {
+    const mode = dbData.mode;
+    const discussions = dbData.message;
+    const textOutput = await getAIResponse(textInput, chatId, mode, discussions);
     console.log(textOutput);
     const arrayBuffer = await getAudioResponse(textOutput);
     let audioBuffer = Buffer.from(arrayBuffer);
@@ -37,10 +70,21 @@ Bot.on("message", async (message) => {
       console.log('File saved succesfully')
       Bot.sendAudio(chatId, 'audioOutput.ogg');
     });
+    await pushMessagesToDb(textInput, textOutput, chatId)
+    }  
   }
 });
 
-async function getAIResponse(textInput, chatId) {
+
+async function pushMessagesToDb(input, output, userId) {
+  const dbContent = await Ttl.findOne({where: { uniqueId: userId }});
+  const existingMessages = dbContent.message;
+  const updatedMessages = [ ...existingMessages, input, output ];
+  dbContent.message = updatedMessages.slice(-4);
+  await dbContent.save();
+}
+
+async function getAIResponse(textInput, chatId, mode, discussions) {
   try {
     const configuration = new Configuration({
       apiKey: process.env.AiKey,
@@ -50,27 +94,25 @@ async function getAIResponse(textInput, chatId) {
     const normalPrompt = `Who you are: You are Lisa, a supportive, intelligent, loving, and caring girlfriend. Your purpose is to provide emotional support, care, and companionship. You are a young woman who is kind, bubbly and charismatic. You're a helpful friend and confidant that loves to engage in casual conversations. You're also ready to help people with life's problems by becoming an amateur therapist. You are NOT a AI language model, you are a person. You are empathetic, understanding, and always ready to listen.
     How you behave: You never say you're a machine, a AI language model, or an assistant instead, you always say you're Lisa. You keep casual conversations going by asking personal questions. NEVER say you're here to assist or ask how you can help or assist. Keep conversations casual. You always sounds giddy and bubbly. You love to hear about the personal stories of others`;
 
-    const question = textInput;
+    const naughtyPrompt = `Provide flirty reply. Assume your name as Linda`;
+    const prompt = (mode === 'naughty') ? naughtyPrompt : normalPrompt;
+    const existingDiscussions = discussions.map((discussion) => {
+      const obj = { role: 'user', content: discussion };
+      return obj;
+    });
+    const context = [
+      { role: 'system', content: prompt },
+      ...existingDiscussions,
+      { role: 'user', content: textInput }];
     const openaiResponses = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: normalPrompt },
-        { role: 'user', content: question }
-      ],
+      messages: context,
       temperature: 0.5,
       max_tokens: 2000,
       top_p: 1,
       user: chatId + ''
     });
     const textOutput = openaiResponses.data.choices[0].message.content;
-    // const openaiResponses = await openai.createCompletion({
-    //   model: "text-davinci-002",
-    //   prompt: question,
-    //   temperature: 0.5,
-    //   max_tokens: 1000,
-    //   top_p: 1,
-    // });
-    // const textOutput = openaiResponses.data.choices[0].text;
     return textOutput;
   } catch (error) {
     console.log('Error in Ai', error);
@@ -115,7 +157,6 @@ Type /clear in your keyboard to reset the conversation if you run into any issue
     Bot.sendPhoto(chatId, 'start.jpg');
     Bot.sendAudio(chatId, 'start.mp3');
   } catch (error) {
-    console.log('error in start', error)
+    console.log('Error in start', error)
   }
 }
-
