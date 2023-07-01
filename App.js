@@ -133,7 +133,7 @@ async function getAudioResponse(textInput) {
       headers: {
         accept: 'audio/mpeg', 
         'content-type': 'application/json', 
-        'xi-api-key': '345a1c23d68facb6dd41795a61489454', 
+        'xi-api-key': process.env.labKey + ''
       },
       data: {
         text: textInput, 
